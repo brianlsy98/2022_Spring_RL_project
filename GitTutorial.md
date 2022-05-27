@@ -6,8 +6,7 @@ Git tutorial
 # Upload your local codes to remote repository
 - git add .
 - git commit –m “commit message”
-- git push –u origin main
-** if error : try pulling first **
+- git push –u origin main          ** if error : try pulling first **
 
 # Download remote repository’s codes to local PC
 - git pull origin main

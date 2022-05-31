@@ -1,6 +1,5 @@
 # Lava 문제
 ## code 분석
-### env
 * percentage_reward = True : 느리게 goal에 도달할수록 reward가 작아짐
 * no_goal_rew = True : goal에서 reward 안 줌
 * dense_reward = True : reward가 100배씩 scale 커짐
@@ -11,8 +10,26 @@
 * _check_bounds : grid 안 벗어나게 제한 해줌
 * act_fail_prob : 내가 취한 행동이 실패할 확률. 나머지 3개의 행동의 확률이 됨.
 
+## DQN
+* 06/01 - 02:00 am
+```python
+lr = 0.01           # learning rate for gradient update 
+batchsize = 64      # batchsize for buffer sampling
+maxlength = 2000    # max number of tuples held by buffer
+tau = 100           # time steps for target update
+episodes = 3000     # number of episodes to run
+initialize = 1000   # initial time steps before start updating
+epsilon = 1.0       # constant for exploration
+decay = 0.999
+e_min = 0.01
+e_mid = 0.2
+gamma = .95         # discount
+hidden_dims = [32,32]   # hidden dimensions
+```
+  * 350 episode 근방에서 goal에 도달하기 시작
+  * 850 episodes를 train하는 동안의 reward 결과 첨부
 
-## Link
+# Link
 * [Bootstrapped DQN](https://joungheekim.github.io/2020/12/06/code-review/)
 * [Rainbow DQN](https://velog.io/@isseebx/Noisy-networks-for-exploration)
 

@@ -27,7 +27,9 @@ gamma = .95         # discount
 hidden_dims = [32,32]   # hidden dimensions
 ```
   * 350 episode 근방에서 goal에 도달하기 시작
-  * 850 episodes를 train하는 동안의 reward 결과 첨부
+  * 850 episodes를 train하는 동안의 reward 결과
+  * ![0601_02:00am](https://user-images.githubusercontent.com/81223817/171236269-09a4fafe-fca0-4afd-ab6f-f2847f1c640e.png)
+
 
 # Link
 * [Bootstrapped DQN](https://joungheekim.github.io/2020/12/06/code-review/)

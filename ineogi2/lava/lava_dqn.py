@@ -29,25 +29,21 @@ class Qfunction(keras.Model):
         # Hidden Layer
         self.hidden_layers = []
         for hidden in hidden_dims:
-            linear = keras.layers.Dense(hidden, activation='linear',
-                                        kernel_initializer=initializer)
+            # linear = keras.layers.Dense(hidden, activation='linear',
+            #                             kernel_initializer=initializer)
             layer = keras.layers.Dense(hidden, activation='relu',
                                       kernel_initializer=initializer)
             
-            self.hidden_layers.append(linear)
+            # self.hidden_layers.append(linear)
             self.hidden_layers.append(layer)
             
         
-        # Output Layer : 
-        # TODO: Define the output layer.
         self.output_layer = keras.layers.Dense(actsize, activation='linear',
                                                kernel_initializer=initializer)
 
 
     @tf.function
     def call(self, states):
-        ########################################################################
-        # TODO: You SHOULD implement the model's forward pass
 
           o=self.input_layer(states)
           for layer in self.hidden_layers:
@@ -55,7 +51,6 @@ class Qfunction(keras.Model):
           output=self.output_layer(o)
 
           return output
-        ########################################################################
 
 # Wrapper class for training Qfunction and updating weights (target network) 
 
@@ -77,8 +72,6 @@ class DQN(object):
         states represent s_t
         actions represent a_t
         """
-        ########################################################################
-        # TODO: Define the logic for calculate  Q_\theta(s,a
 
         q_s=self.compute_Qvalues(states)
         q_sa=[]
@@ -87,7 +80,6 @@ class DQN(object):
         q_sa=tf.convert_to_tensor(q_sa,dtype=tf.float32)
 
         return q_sa
-        ########################################################################
         
 
     def _loss(self, Qpreds, targets):
@@ -178,25 +170,23 @@ class ReplayBuffer(object):
         inds = np.random.choice(len(self.buffer), batchsize, replace=False)
         return [self.buffer[idx] for idx in inds]
 
-"""Now that we have all the ingredients for DQN, we can write the main procedure to train DQN on a given environment. The implementation is straightforward if you follow the pseudocode. Refer to the pseudocode pdf for details."""
-
 ################################################################################
-lr = 0.001  # learning rate for gradient update 
-batchsize = 64  # batchsize for buffer sampling
-maxlength = 2000  # max number of tuples held by buffer
-tau = 100  # time steps for target update
-episodes = 3000  # number of episodes to run
-initialize = 1000  # initial time steps before start updating
-epsilon = 1.0  # constant for exploration
-decay=0.999
-e_min=0.01
-e_mid=0.2
-gamma = .95  # discount
-hidden_dims=[128,64,16] # hidden dimensions
+lr = 0.01           # learning rate for gradient update 
+batchsize = 64      # batchsize for buffer sampling
+maxlength = 2000    # max number of tuples held by buffer
+tau = 100           # time steps for target update
+episodes = 3000     # number of episodes to run
+initialize = 1000   # initial time steps before start updating
+epsilon = 1.0       # constant for exploration
+decay = 0.999
+e_min = 0.01
+e_mid = 0.2
+gamma = .95         # discount
+hidden_dims = [32,32]   # hidden dimensions
 
-max_steps=100
-stochasticity=0
-no_render=True
+max_steps = 100
+stochasticity = 0
+no_render = True
 ################################################################################
 
 # initialize environment
@@ -213,10 +203,6 @@ Qtarget = DQN(obssize, actsize, hidden_dims, optimizer)
 
 # initialization of buffer
 buffer = ReplayBuffer(maxlength)
-
-################################################################################
-# TODO: Complete the main iteration
-# CartPole-v0 defines "solving" as getting average reward of 195.0 over 100 consecutive trials.
 
 obs_ = np.zeros((60,))
 step_list = []
@@ -273,12 +259,12 @@ for ite in range(episodes):
 ################################################################################
     step_list.append(env._steps)
     obs_ += obs
-    ## DO NOT CHANGE THIS PART!
+
     rrecord.append(rsum)
     if ite % 10 == 0:
-        if np.mean(rrecord[-10:])>=-1.3:
+        if np.mean(rrecord[-10:])>=-1:
             epsilon=max(epsilon*decay, e_min)
-        print('iteration {} avg reward {} / avg step {}'.format(ite, np.mean(rrecord[-10:]),np.mean(step_list[-10:])))
+        print('iteration {} avg reward {} / avg step {}'.format(ite, np.mean(rrecord[-10:]), np.mean(step_list[-10:])))
         step_list = []
         print('final state : \n{}\n'.format(obs_.reshape(6,10)))
         obs_ = np.zeros((60,))

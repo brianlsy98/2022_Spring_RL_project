@@ -190,7 +190,7 @@ initialize = 1000  # initial time steps before start updating
 epsilon = 1.0  # constant for exploration
 decay=0.999
 e_min=0.01
-e_mid=0.4
+e_mid=0.2
 gamma = .95  # discount
 hidden_dims=[128,64,16] # hidden dimensions
 
@@ -218,6 +218,7 @@ buffer = ReplayBuffer(maxlength)
 # TODO: Complete the main iteration
 # CartPole-v0 defines "solving" as getting average reward of 195.0 over 100 consecutive trials.
 
+obs_ = np.zeros((60,))
 step_list = []
 rrecord = []
 totalstep = 0
@@ -271,13 +272,16 @@ for ite in range(episodes):
 
 ################################################################################
     step_list.append(env._steps)
+    obs_ += obs
     ## DO NOT CHANGE THIS PART!
     rrecord.append(rsum)
     if ite % 10 == 0:
-        if np.mean(rrecord[-10:])>0:
+        if np.mean(rrecord[-10:])>=-1.2:
             epsilon=max(epsilon*decay, e_min)
-        print('iteration {} ave reward {} / ave step {}'.format(ite, np.mean(rrecord[-10:]),np.mean(step_list[-10:])))
-        print('final state : \n{}\n'.format(obs.reshape(6,10)))
+        print('iteration {} avg reward {} / avg step {}'.format(ite, np.mean(rrecord[-10:]),np.mean(step_list[-10:])))
+        step_list = []
+        print('final state : \n{}\n'.format(obs_.reshape(6,10)))
+        obs_ = np.zeros((60,))
     
     ave100 = np.mean(rrecord[-100:])   
     if  ave100 > 0.0:

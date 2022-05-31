@@ -3,7 +3,6 @@ from tensorflow import keras
 
 from collections import deque
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 
 import gym
@@ -29,10 +28,13 @@ class Qfunction(keras.Model):
 
         # Hidden Layer
         self.hidden_layers = []
-        for hidden_dim in hidden_dims:
-            # TODO: define each hidden layers
-            layer = keras.layers.Dense(hidden_dim, activation='relu',
+        for hidden in hidden_dims:
+            linear = keras.layers.Dense(hidden, activation='linear',
+                                        kernel_initializer=initializer)
+            layer = keras.layers.Dense(hidden, activation='relu',
                                       kernel_initializer=initializer)
+            
+            self.hidden_layers.append(linear)
             self.hidden_layers.append(layer)
             
         
@@ -93,7 +95,8 @@ class DQN(object):
         Qpreds represent Q_\theta(s,a)
         targets represent the terms E[r+gamma Q] in Bellman equations
 
-        This function is OBJECTIVE function
+        This function is OBJECTIVE function            self.hidden_layers.append(layer)
+
         """
         return tf.math.reduce_mean(tf.square(Qpreds - targets))
 
@@ -179,17 +182,17 @@ class ReplayBuffer(object):
 
 ################################################################################
 lr = 0.001  # learning rate for gradient update 
-batchsize = 32  # batchsize for buffer sampling
-maxlength = 1000  # max number of tuples held by buffer
-envname = "CartPole-v0"  # environment name
+batchsize = 64  # batchsize for buffer sampling
+maxlength = 2000  # max number of tuples held by buffer
 tau = 100  # time steps for target update
 episodes = 3000  # number of episodes to run
 initialize = 1000  # initial time steps before start updating
 epsilon = 1.0  # constant for exploration
-decay=0.995
+decay=0.999
 e_min=0.01
+e_mid=0.4
 gamma = .95  # discount
-hidden_dims=[128, 64,32] # hidden dimensions
+hidden_dims=[128,64,16] # hidden dimensions
 
 max_steps=100
 stochasticity=0
@@ -197,7 +200,7 @@ no_render=True
 ################################################################################
 
 # initialize environment
-env = lava.ZigZag6x10(max_steps=max_steps, act_fail_prob=stochasticity, goal=(5, 9), numpy_state=True)
+env = lava.ZigZag6x10(max_steps=max_steps, act_fail_prob=stochasticity, goal=(5, 9), numpy_state=False)
 obssize = env.observation_space.n
 actsize = env.action_space.n
 
@@ -215,12 +218,12 @@ buffer = ReplayBuffer(maxlength)
 # TODO: Complete the main iteration
 # CartPole-v0 defines "solving" as getting average reward of 195.0 over 100 consecutive trials.
 
+step_list = []
 rrecord = []
 totalstep = 0
 for ite in range(episodes):
-
     obs = env.reset()
-    obs=np.eye(env.observation_space.n)[0]
+    obs = np.eye(env.observation_space.n)[0]
     done = False
     rsum = 0.0
 
@@ -240,8 +243,8 @@ for ite in range(episodes):
       buffer.append(exp)
 
       if (totalstep>initialize):
-        if (epsilon>e_min):
-          epsilon*=decay
+        if (epsilon>e_mid):
+            epsilon*=decay
         
         samples=buffer.sample(batchsize)
         states=[]
@@ -267,11 +270,14 @@ for ite in range(episodes):
         Qtarget.update_weights(Qprincipal)
 
 ################################################################################
-
+    step_list.append(env._steps)
     ## DO NOT CHANGE THIS PART!
     rrecord.append(rsum)
     if ite % 10 == 0:
-        print('iteration {} ave reward {}'.format(ite, np.mean(rrecord[-10:])))
+        if np.mean(rrecord[-10:])>0:
+            epsilon=max(epsilon*decay, e_min)
+        print('iteration {} ave reward {} / ave step {}'.format(ite, np.mean(rrecord[-10:]),np.mean(step_list[-10:])))
+        print('final state : \n{}\n'.format(obs.reshape(6,10)))
     
     ave100 = np.mean(rrecord[-100:])   
     if  ave100 > 0.0:

@@ -6,7 +6,7 @@
 * dense_reward = True : reward가 100배씩 scale 커짐
 * numpy_state = True : state를 넘파이 배열로 return
 * xy_state = True : state가 one-hot이 아닌 scalar 형태
-* P : 전이 확률 (잘 모르겠음. 아마 DP 같은 곳에서 쓰던 확률인듯)
+* P : 전이 확률
 * isd : 초기 state에 대한 분포. 현재는 무조건 (0,0)에서 시작하게 설정되어있음  
 * _check_bounds : grid 안 벗어나게 제한 해줌
 * act_fail_prob : 내가 취한 행동이 실패할 확률. 나머지 3개의 행동의 확률이 됨.

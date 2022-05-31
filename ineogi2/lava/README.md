@@ -13,6 +13,6 @@
 
 
 ## Link
-* [Bootstrapped DQN] (https://joungheekim.github.io/2020/12/06/code-review/)
-* [Rainbow DQN] (https://velog.io/@isseebx/Noisy-networks-for-exploration)
+* [Bootstrapped DQN](https://joungheekim.github.io/2020/12/06/code-review/)
+* [Rainbow DQN](https://velog.io/@isseebx/Noisy-networks-for-exploration)
 

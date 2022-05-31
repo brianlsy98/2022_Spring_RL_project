@@ -276,7 +276,7 @@ for ite in range(episodes):
     ## DO NOT CHANGE THIS PART!
     rrecord.append(rsum)
     if ite % 10 == 0:
-        if np.mean(rrecord[-10:])>=-1.2:
+        if np.mean(rrecord[-10:])>=-1.3:
             epsilon=max(epsilon*decay, e_min)
         print('iteration {} avg reward {} / avg step {}'.format(ite, np.mean(rrecord[-10:]),np.mean(step_list[-10:])))
         step_list = []

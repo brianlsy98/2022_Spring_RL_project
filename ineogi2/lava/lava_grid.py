@@ -79,7 +79,7 @@ class GridCore(DiscreteEnv):
         self.s = np.random.choice(range(len(self.isd)), p=self.isd)
         self.lastaction = None
         if self.xy:
-            s = np.unravel_index(self.s, self.shape)
+            s = np.unravel_index(self.s, self.shape)    # s를 numpy array로
             if self._nps:
                 return np.array([s], dtype=np.float32)
             else:

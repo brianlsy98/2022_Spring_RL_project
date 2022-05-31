@@ -3,7 +3,6 @@ from tensorflow import keras
 
 from collections import deque
 import numpy as np
-# %matplotlib inline
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -198,7 +197,7 @@ no_render=True
 ################################################################################
 
 # initialize environment
-env = lava.ZigZag6x10(max_steps=max_steps, act_fail_prob=stochasticity, goal=(5, 9), numpy_state=False)
+env = lava.ZigZag6x10(max_steps=max_steps, act_fail_prob=stochasticity, goal=(5, 9), numpy_state=True)
 obssize = env.observation_space.n
 actsize = env.action_space.n
 
@@ -286,4 +285,3 @@ plt.title('episode rewards')
 plt.xlabel('episodes')
 plt.ylabel('rewards')
 plt.show()
-

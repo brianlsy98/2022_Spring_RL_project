@@ -1,0 +1,6 @@
+# 2022_Spring_RL_project
+# sylee
+# trial records
+
+trial1 :
+ - implemented Deep Exploration DQN

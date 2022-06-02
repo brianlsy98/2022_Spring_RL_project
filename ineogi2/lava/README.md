@@ -29,6 +29,8 @@ hidden_dims = [32,32]   # hidden dimensions
   * 350 episode 근방에서 goal에 도달하기 시작
   * 850 episodes를 train하는 동안의 reward 결과
   * ![0601_02:00am](https://user-images.githubusercontent.com/81223817/171236269-09a4fafe-fca0-4afd-ab6f-f2847f1c640e.png)
+  * ![0601_02:00am_screenshot](https://user-images.githubusercontent.com/81223817/171553883-23d800a5-4035-4e92-91f0-01268ba88bb8.png)
+
 
 
 # Link

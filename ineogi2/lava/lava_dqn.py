@@ -173,18 +173,18 @@ class ReplayBuffer(object):
 ################################################################################
 lr = 0.01           # learning rate for gradient update 
 batchsize = 64      # batchsize for buffer sampling
-maxlength = 2000    # max number of tuples held by buffer
+maxlength = 1000    # max number of tuples held by buffer
 tau = 100           # time steps for target update
 episodes = 3000     # number of episodes to run
 initialize = 1000   # initial time steps before start updating
 epsilon = 1.0       # constant for exploration
 decay = 0.999
 e_min = 0.01
-e_mid = 0.2
-gamma = .95         # discount
-hidden_dims = [32,32]   # hidden dimensions
+e_mid = 0.1
+gamma = .99         # discount
+hidden_dims = [100,100]   # hidden dimensions
 
-max_steps = 100
+max_steps = 50
 stochasticity = 0
 no_render = True
 ################################################################################

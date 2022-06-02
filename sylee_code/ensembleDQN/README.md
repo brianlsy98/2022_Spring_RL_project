@@ -10,17 +10,17 @@ What's different from DQN :
     (eval : for 5 pairs of Qprin/Qtarg, get argmax(Q) and vote 5 times)
 
 * Added Algorithm by S.Y. LEE :
-- when voting (in eval action selection), add weights, not just 1
+when voting (in eval action selection), add weights, not just 1
 
 
 
 
 Finished after
 
-trial 1. 100 iter -> evaluation reward = 10
-trial 2. 100 iter -> evaluation reward = 10
-trial 3. 
-trial 4. 
-trial 5.
+- trial 1. 100 iter -> evaluation reward = 10
+- trial 2. 100 iter -> evaluation reward = 10
+- trial 3. 
+- trial 4. 
+- trial 5.
 
 iteration

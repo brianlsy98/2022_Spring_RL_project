@@ -24,6 +24,11 @@ if os.path.exists(os.getcwd()+"/model/lava/lava_actor_w.index") :
     print("loading existing model..")
     agent.actor.load_weights(os.getcwd()+"/model/lava"+'/lava_actor_w')    # load policy
     agent.critic.load_weights(os.getcwd()+"/model/lava"+'/lava_critic_w')
+
+    eval_or_loadtrain = input("just Eval(1) or Load and Train(2) : ")
+    if eval_or_loadtrain == 2:
+        agent.train(no_render)
+
 else :
     print("training from the beginning")
     agent.train(no_render)                                  # train policy
@@ -41,28 +46,28 @@ obs_[env.goal[0]*env._shape[1]+env.goal[1]] = 1000     # visuailze goal as 1000
 # ========================= #
 
 
-# count = 1
-# while not done:
-#         obs_[s] += 1
+count = 1
+while not done:
+        obs_[s] += 1
 
-#         obs_array = np.zeros((env._shape[0]*env._shape[1],))
-#         obs_array[s] += 1
-#         obs_array = obs_array.reshape(1, -1)
-#         action = agent.action(obs_array)
+        obs_array = np.zeros((env._shape[0]*env._shape[1],))
+        obs_array[s] += 1
+        obs_array = obs_array.reshape(1, -1)
+        action = agent.action(obs_array)
         
-#         print("")
-#         print(f"trajectory : at step {count}")
-#         print(obs_.reshape(env._shape))
+        print("")
+        print(f"trajectory : at step {count}")
+        print(obs_.reshape(env._shape))
 
-#         ns, reward, done, _ = env.step(action[0].numpy())
+        ns, reward, done, _ = env.step(action[0].numpy())
 
-#         cum_reward += reward
-#         s = np.where(ns == 1)[0]
+        cum_reward += reward
+        s = np.where(ns == 1)[0]
 
-#         count += 1
+        count += 1
 
-# print("")    
-# print(f"total reward: {cum_reward}")
+print("")    
+print(f"total reward: {cum_reward}")
 
 
 # == TESTING n times == #

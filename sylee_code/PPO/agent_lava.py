@@ -92,7 +92,7 @@ class agent():      # PPO agent
 
         # Hyperparameters of the PPO algorithm
         self.steps_per_epoch = 4000
-        self.epochs = 100
+        self.epochs = 50
         self.gamma = 0.99
         self.clip_ratio = 0.2
         self.policy_learning_rate = 3e-4
@@ -194,12 +194,16 @@ class agent():      # PPO agent
         observation, episode_return, episode_length = self.env.reset(), 0, 0
         reward_for_print = 0
 
+
         for epoch in range(self.epochs):
             
             sum_return = 0
             sum_length = 0
             num_episodes = 0
-            
+
+            print_once = 0
+            goal_reached = 0
+
             # == only for visualizing = #
             obs_with_pit_goal = np.zeros((self.env._shape[0]*self.env._shape[1],))
             obs_only_state = np.zeros((self.env._shape[0]*self.env._shape[1],))
@@ -217,6 +221,7 @@ class agent():      # PPO agent
                 # ====== observation cum ===== #
                 obs_only_state[observation] += 1
                 # ============================ #
+                
 
                 # obs : one-hot array
                 # observation : integer
@@ -228,18 +233,21 @@ class agent():      # PPO agent
 
                 reward_for_print += reward
 
+
                 # ======= reward -100 if reached to same place 3 times after action ========= #
                 # ======= *********** key idea for training time decrease *********** ======= #
-                for state in obs_only_state :
-                    if state > 2 : reward -= 1; done = True; reward_for_print -= 1
-                    elif state > 1 : reward -= state/len(obs_only_state)
-                    elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
-                # if reached to goal with long time : reward decrease a little at goal
-                if np.where(observation_new == 1)[0] == self.env.goal[0]*self.env._shape[1]+self.env.goal[1]:
-                    # 2*(self.env._shape[0]+self.env._shape[1]) : longest dist to goal
-                    reward += np.exp((2*(self.env._shape[0]+self.env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
-                # =========================================================================== #
+                if goal_reached == 0:   # reward implementation until first goal reach
+                    for state in obs_only_state :
+                        if state > 2 : reward -= 1; done = True; reward_for_print -= 1
+                        elif state > 1 : reward -= state/len(obs_only_state)
+                        elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
                 
+                    if np.where(observation_new == 1)[0] == self.env.goal[0]*self.env._shape[1]+self.env.goal[1]:
+                        # 2*(self.env._shape[0]+self.env._shape[1]) : longest dist to goal
+                        reward += np.exp(3*(2*(self.env._shape[0]+self.env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
+                        goal_reached = 1
+                # =========================================================================== #
+                # if goal reached, reward is only given by env.step function
 
                 episode_return += reward
                 episode_length += 1
@@ -258,10 +266,12 @@ class agent():      # PPO agent
                 terminal = done
                 if terminal or (t == self.steps_per_epoch - 1):
                     # == only for visualizing == #
-                    if t != self.steps_per_epoch - 1 and t > self.steps_per_epoch - 0.5*self.env.max_steps:
+                    if print_once == 0 and t > self.steps_per_epoch - 0.5*self.env.max_steps:
+                        print_once = 1
                         print("")
                         print(f"trajectory : at epoch {epoch+1}")
                         print(obs_with_pit_goal.reshape(self.env._shape))
+                        if goal_reached == 1: print("goal_reached")
                     # ========================== #
                     # == only for visualizing = #
                     obs_with_pit_goal = np.zeros((self.env._shape[0]*self.env._shape[1],))
@@ -305,8 +315,8 @@ class agent():      # PPO agent
             )
         
             if (epoch+1) % 10 == 1 :
-                self.actor.save_weights(self.model_path+"/lava_actor_w_"+str(epoch//10))
-                self.critic.save_weights(self.model_path+"/lava_critic_w_"+str(epoch//10))
+                self.actor.save_weights(self.model_path+"/checkpoints/lava_actor_w_"+str(epoch//10))
+                self.critic.save_weights(self.model_path+"/checkpoints/lava_critic_w_"+str(epoch//10))
 
         self.actor.save_weights(self.model_path+"/lava_actor_w")
         self.critic.save_weights(self.model_path+"/lava_critic_w")

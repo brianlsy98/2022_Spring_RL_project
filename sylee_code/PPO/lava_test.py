@@ -26,10 +26,11 @@ if os.path.exists(os.getcwd()+"/model/lava/lava_actor_w.index") :
     agent.critic.load_weights(os.getcwd()+"/model/lava"+'/lava_critic_w')
 
     eval_or_loadtrain = input("just Eval(1) or Load and Train(2) : ")
-    if eval_or_loadtrain == 2:
+    if eval_or_loadtrain == "2":
         agent.train(no_render)
 
 else :
+    eval_or_loadtrain = "0"
     print("training from the beginning")
     agent.train(no_render)                                  # train policy
 
@@ -45,58 +46,60 @@ for pit in env._pits:
 obs_[env.goal[0]*env._shape[1]+env.goal[1]] = 1000     # visuailze goal as 1000
 # ========================= #
 
+if eval_or_loadtrain != "1":
+    count = 1
+    while not done:
+            obs_[s] += 1
 
-count = 1
-while not done:
-        obs_[s] += 1
+            obs_array = np.zeros((env._shape[0]*env._shape[1],))
+            obs_array[s] += 1
+            obs_array = obs_array.reshape(1, -1)
+            action = agent.action(obs_array)
+            
+            print("")
+            print(f"trajectory : at step {count}")
+            print(obs_.reshape(env._shape))
 
-        obs_array = np.zeros((env._shape[0]*env._shape[1],))
-        obs_array[s] += 1
-        obs_array = obs_array.reshape(1, -1)
-        action = agent.action(obs_array)
-        
-        print("")
-        print(f"trajectory : at step {count}")
-        print(obs_.reshape(env._shape))
+            ns, reward, done, _ = env.step(action[0].numpy())
 
-        ns, reward, done, _ = env.step(action[0].numpy())
+            cum_reward += reward
+            s = np.where(ns == 1)[0]
 
-        cum_reward += reward
-        s = np.where(ns == 1)[0]
+            count += 1
 
-        count += 1
-
-print("")    
-print(f"total reward: {cum_reward}")
+    print("")    
+    print(f"total reward: {cum_reward}")
 
 
 # == TESTING n times == #
-n = 30
-rewards = []
-for _ in range(n):
-    s = env.reset()
-    done = False
-    cum_reward = 0
-    count = 1
-    while not done:
-        obs_[s] += 1
+if eval_or_loadtrain == "1":
+    print("")
+    n = 30
+    rewards = []
+    for _ in range(n):
+        s = env.reset()
+        done = False
+        cum_reward = 0
+        count = 1
+        while not done:
+            obs_[s] += 1
 
-        obs_array = np.zeros((env._shape[0]*env._shape[1],))
-        obs_array[s] += 1
-        obs_array = obs_array.reshape(1, -1)
-        action = agent.action(obs_array)
+            obs_array = np.zeros((env._shape[0]*env._shape[1],))
+            obs_array[s] += 1
+            obs_array = obs_array.reshape(1, -1)
+            action = agent.action(obs_array)
 
-        ns, reward, done, _ = env.step(action[0].numpy())
+            ns, reward, done, _ = env.step(action[0].numpy())
 
-        cum_reward += reward
-        s = np.where(ns == 1)[0]
+            cum_reward += reward
+            s = np.where(ns == 1)[0]
 
-        count += 1
+            count += 1
 
-    print(f"total reward: {cum_reward}")
-    rewards.append(cum_reward)
+        print(f"total reward: {cum_reward}")
+        rewards.append(cum_reward)
+    print("")
 # ============= #
-print("")
 
 
 

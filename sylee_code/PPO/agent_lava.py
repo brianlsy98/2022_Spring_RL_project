@@ -107,7 +107,7 @@ class agent():      # PPO agent
         # True if you want to render the environment
         self.render = True
 
-        self.model_path = os.path.dirname(__file__)+"/model/lava"
+        self.model_path = os.getcwd()+"/model/lava"
 
         self.env = e
         self.observation_dimensions = self.env.observation_space.n

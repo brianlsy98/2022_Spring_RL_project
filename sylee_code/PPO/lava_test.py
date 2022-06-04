@@ -19,10 +19,11 @@ cum_reward = 0.0
 """ Your agent"""
 agent = agent(env)
 
-if os.path.exists(os.path.dirname(__file__)+"/model/lava"+'/lava_actor_w') :
+print("")
+if os.path.exists(os.getcwd()+"/model/lava/lava_actor_w.index") :
     print("loading existing model..")
-    agent.actor.load_weights(os.path.dirname(__file__)+"/model/lava"+'/lava_actor_w')    # load policy
-    agent.critic.load_weights(os.path.dirname(__file__)+"/model/lava"+'/lava_critic_w')
+    agent.actor.load_weights(os.getcwd()+"/model/lava"+'/lava_actor_w')    # load policy
+    agent.critic.load_weights(os.getcwd()+"/model/lava"+'/lava_critic_w')
 else :
     print("training from the beginning")
     agent.train(no_render)                                  # train policy
@@ -39,33 +40,63 @@ for pit in env._pits:
 obs_[env.goal[0]*env._shape[1]+env.goal[1]] = 1000     # visuailze goal as 1000
 # ========================= #
 
-count = 1
-while not done:
-    obs_[s] += 1
 
-    obs_array = np.zeros((env._shape[0]*env._shape[1],))
-    obs_array[s] += 1
-    obs_array = obs_array.reshape(1, -1)
-    action = agent.action(obs_array)
-    
-    print("")
-    print(f"trajectory : at step {count}")
-    print(obs_.reshape(env._shape))
+# count = 1
+# while not done:
+#         obs_[s] += 1
 
-    ns, reward, done, _ = env.step(action[0].numpy())
+#         obs_array = np.zeros((env._shape[0]*env._shape[1],))
+#         obs_array[s] += 1
+#         obs_array = obs_array.reshape(1, -1)
+#         action = agent.action(obs_array)
+        
+#         print("")
+#         print(f"trajectory : at step {count}")
+#         print(obs_.reshape(env._shape))
 
-    cum_reward += reward
-    s = np.where(ns == 1)[0]
+#         ns, reward, done, _ = env.step(action[0].numpy())
 
-    count += 1
+#         cum_reward += reward
+#         s = np.where(ns == 1)[0]
 
-print("")    
-print(f"total reward: {cum_reward}")
+#         count += 1
+
+# print("")    
+# print(f"total reward: {cum_reward}")
+
+
+# == TESTING n times == #
+n = 30
+rewards = []
+for _ in range(n):
+    s = env.reset()
+    done = False
+    cum_reward = 0
+    count = 1
+    while not done:
+        obs_[s] += 1
+
+        obs_array = np.zeros((env._shape[0]*env._shape[1],))
+        obs_array[s] += 1
+        obs_array = obs_array.reshape(1, -1)
+        action = agent.action(obs_array)
+
+        ns, reward, done, _ = env.step(action[0].numpy())
+
+        cum_reward += reward
+        s = np.where(ns == 1)[0]
+
+        count += 1
+
+    print(f"total reward: {cum_reward}")
+    rewards.append(cum_reward)
+# ============= #
+print("")
 
 
 
 
-# # ====== FOR submission ====== #
+# # ====== What TAs gave us for test code ====== #
 # import gym
 # from lava_grid import ZigZag6x10
 # from agent_lava import agent
@@ -92,4 +123,4 @@ print(f"total reward: {cum_reward}")
 #     ns, reward, done, _ = env.step(action)
 #     cum_reward += reward
 # print(f"total reward: {cum_reward}")
-# # ============================ #
+# # ============================================ #

@@ -92,7 +92,7 @@ class agent():      # PPO agent
 
         # Hyperparameters of the PPO algorithm
         self.steps_per_epoch = 4000
-        self.epochs = 30
+        self.epochs = 100
         self.gamma = 0.99
         self.clip_ratio = 0.2
         self.policy_learning_rate = 3e-4
@@ -191,8 +191,10 @@ class agent():      # PPO agent
     def train(self, no_render):
         
         observation, episode_return, episode_length = self.env.reset(), 0, 0
+        reward_for_print = 0
 
         for epoch in range(self.epochs):
+            
             sum_return = 0
             sum_length = 0
             num_episodes = 0
@@ -223,16 +225,18 @@ class agent():      # PPO agent
                 logits, action = self.sample_action(obs)
                 observation_new, reward, done, _ = self.env.step(action[0].numpy())
                 
+                reward_for_print += reward
+
                 # ======= reward -100 if reached to same place 3 times after action ========= #
                 # ======= *********** key idea for training time decrease *********** ======= #
                 for state in obs_only_state :
-                    if state > 1 : reward -= 1; done = True
+                    if state > 1 : reward -= 1; done = True; reward_for_print -= 1
                     elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
                 # if reached to goal with long time : reward decrease a little at goal
                 if np.where(observation_new == 1)[0] == self.env.goal[0]*self.env._shape[1]+self.env.goal[1]:
                     reward -= 0.1*np.count_nonzero(obs_only_state)/len(obs_only_state)
                 # =========================================================================== #
-
+                
 
                 episode_return += reward
                 episode_length += 1
@@ -251,7 +255,7 @@ class agent():      # PPO agent
                 terminal = done
                 if terminal or (t == self.steps_per_epoch - 1):
                     # == only for visualizing == #
-                    if t != self.steps_per_epoch - 1 and t > self.steps_per_epoch - 1.5*self.env.max_steps:
+                    if t != self.steps_per_epoch - 1 and t > self.steps_per_epoch - 0.5*self.env.max_steps:
                         print("")
                         print(f"trajectory : at epoch {epoch}")
                         print(obs_with_pit_goal.reshape(self.env._shape))
@@ -266,10 +270,11 @@ class agent():      # PPO agent
 
                     last_value = 0 if done else self.critic(obs)
                     self.buffer.finish_trajectory(last_value)
-                    sum_return += episode_return
+                    sum_return += reward_for_print
                     sum_length += episode_length
                     num_episodes += 1
                     observation, episode_return, episode_length = self.env.reset(), 0, 0
+                    reward_for_print = 0
                     
 
             (

@@ -2,5 +2,5 @@
 # sylee
 # trial records
 
-trial1 :
- - implemented Deep Exploration DQN
+- implemented Deep Exploration DQN
+- implemented PPO (success)

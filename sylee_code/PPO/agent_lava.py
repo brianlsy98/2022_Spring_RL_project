@@ -14,7 +14,7 @@ from tensorflow.keras import layers
 import gym
 import scipy.signal
 import time
-
+import os
 
 def discounted_cumulative_sums(x, discount):
     # Discounted cumulative sums of vectors for computing rewards-to-go and advantage .
@@ -107,6 +107,7 @@ class agent():      # PPO agent
         # True if you want to render the environment
         self.render = True
 
+        self.model_path = os.path.dirname(__file__)+"/model/lava"
 
         self.env = e
         self.observation_dimensions = self.env.observation_space.n
@@ -189,7 +190,7 @@ class agent():      # PPO agent
 
     
     def train(self, no_render):
-        
+
         observation, episode_return, episode_length = self.env.reset(), 0, 0
         reward_for_print = 0
 
@@ -224,17 +225,19 @@ class agent():      # PPO agent
                 obs = obs.reshape(1,-1)
                 logits, action = self.sample_action(obs)
                 observation_new, reward, done, _ = self.env.step(action[0].numpy())
-                
+
                 reward_for_print += reward
 
                 # ======= reward -100 if reached to same place 3 times after action ========= #
                 # ======= *********** key idea for training time decrease *********** ======= #
                 for state in obs_only_state :
-                    if state > 1 : reward -= 1; done = True; reward_for_print -= 1
+                    if state > 2 : reward -= 1; done = True; reward_for_print -= 1
+                    elif state > 1 : reward -= state/len(obs_only_state)
                     elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
                 # if reached to goal with long time : reward decrease a little at goal
                 if np.where(observation_new == 1)[0] == self.env.goal[0]*self.env._shape[1]+self.env.goal[1]:
-                    reward -= 0.1*np.count_nonzero(obs_only_state)/len(obs_only_state)
+                    # 2*(self.env._shape[0]+self.env._shape[1]) : longest dist to goal
+                    reward += np.exp((2*(self.env._shape[0]+self.env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
                 # =========================================================================== #
                 
 
@@ -257,7 +260,7 @@ class agent():      # PPO agent
                     # == only for visualizing == #
                     if t != self.steps_per_epoch - 1 and t > self.steps_per_epoch - 0.5*self.env.max_steps:
                         print("")
-                        print(f"trajectory : at epoch {epoch}")
+                        print(f"trajectory : at epoch {epoch+1}")
                         print(obs_with_pit_goal.reshape(self.env._shape))
                     # ========================== #
                     # == only for visualizing = #
@@ -300,4 +303,10 @@ class agent():      # PPO agent
             print(
                 " Epoch: "+str(epoch + 1)+". Mean Return: "+str(sum_return / num_episodes)+". Mean Length: "+str(sum_length / num_episodes)
             )
+        
+            if (epoch+1) % 10 == 1 :
+                self.actor.save_weights(self.model_path+"/lava_actor_w_"+str(epoch//10))
+                self.critic.save_weights(self.model_path+"/lava_critic_w_"+str(epoch//10))
 
+        self.actor.save_weights(self.model_path+"/lava_actor_w")
+        self.critic.save_weights(self.model_path+"/lava_critic_w")

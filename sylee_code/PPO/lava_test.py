@@ -4,6 +4,8 @@ from agent_lava import agent
 import random
 import numpy as np
 
+import os
+
 # default setting
 max_steps = 100
 stochasticity = 0 # probability of the selected action failing and instead executing any of the remaining 3
@@ -17,7 +19,13 @@ cum_reward = 0.0
 """ Your agent"""
 agent = agent(env)
 
-agent.train(no_render)   # train policy
+if os.path.exists(os.path.dirname(__file__)+"/model/lava"+'/lava_actor_w') :
+    print("loading existing model..")
+    agent.actor.load_weights(os.path.dirname(__file__)+"/model/lava"+'/lava_actor_w')    # load policy
+    agent.critic.load_weights(os.path.dirname(__file__)+"/model/lava"+'/lava_critic_w')
+else :
+    print("training from the beginning")
+    agent.train(no_render)                                  # train policy
 
 # moving costs -0.01, falling in lava -1, reaching goal +1
 # final reward is number_of_steps / max_steps

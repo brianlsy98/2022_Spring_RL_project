@@ -1,11 +1,4 @@
-# Results for executing DQN code
+# Results for executing PPO code
 
-Finished after
-
-trial 1. 
-trial 2. 
-trial 3. 
-trial 4. 
-trial 5.
-
-iteration
+PPO : only for LAVA
+- converges very early

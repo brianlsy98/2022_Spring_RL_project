@@ -2,13 +2,13 @@
 # - HyeokJin Kwon
 # - Seongmin Lee
 # - Sungyoung Lee
-# Code by Sungyoung Lee
 
 import tensorflow as tf
 from tensorflow import keras
 
 from collections import deque
 import numpy as np
+import os
 
 
 class Qfunction(keras.Model):
@@ -134,25 +134,29 @@ class ReplayBuffer(object):
 ### ensembleDQN implementation ###
 class agent():
     
-    def __init__(self, e, head_num):
+    def __init__(self, obs_dim, act_dim):
 
-        self.env = e
-        self.state = self.env.reset()
-
-        ### For Q value training ###        
-        self.episode_length = 100
         self.hidden_dim = [8, 4]
         self.lr = 1e-3
+        self.ensemble_num = 5
 
-        self.bernoulli_prob = 0.9
-        self.ensemble_num = head_num
+        # ==== Train or Eval mode select ==== #
+        print("")
+        self.mode = int(input("[train from the beginning](1) or [load weights & eval](2) : "))
+        if self.mode == 1:
+            print("train from the beginning..")
+            self.initialize_mode = int(input("initialization for layers. Select int from 1 to 10 : "))
+        elif self.mode == 2:
+            print("loading existing model..")
+            self.Qs = []
+            for i in range(self.ensemble_num):
+                Qprin = DQN(obs_dim, act_dim, self.hidden_dim, optimizer = keras.optimizers.Adam(learning_rate=self.lr))
+                Qtarg = DQN(obs_dim, act_dim, self.hidden_dim, optimizer = keras.optimizers.Adam(learning_rate=self.lr))
+                Qprin.qfunction = keras.models.load_model(os.getcwd()+"/model/chainMDP"+'/Qprin_'+str(i))
+                Qtarg.qfunction = keras.models.load_model(os.getcwd()+"/model/chainMDP"+'/Qtarg_'+str(i))
 
-
-        self.Qs = []
-        for _ in range(self.ensemble_num):
-            Qprin = DQN(10, e.action_space.n, self.hidden_dim, optimizer = keras.optimizers.Adam(learning_rate=self.lr))
-            Qtarg = DQN(10, e.action_space.n, self.hidden_dim, optimizer = keras.optimizers.Adam(learning_rate=self.lr))
-            self.Qs.append([Qprin, Qtarg])
+                self.Qs.append([Qprin, Qtarg])
+        # =================================== #
 
         return
     
@@ -161,8 +165,10 @@ class agent():
     # - train : head fixed for each epoch
     # - eval : vote
     def action(self, s):
-        voting_paper = np.zeros(self.env.action_space.n)
         
+        # voting_paper = np.zeros(len(self.Qs[0][0]))
+        voting_paper = np.zeros(2)
+
         for n in range(self.ensemble_num):
             Q = self.Qs[n][0].compute_Qvalues(np.array(s))
             action = np.argmax(Q)   # always max action choose
@@ -172,7 +178,32 @@ class agent():
         return np.argmax(voting_paper)
 
 
-    def train(self):
+    def train(self, env):
+
+        # == initializing model == #        
+        self.episode_length = 300
+
+        self.bernoulli_prob = 0.9
+        
+        self.Qs = []
+        for _ in range(self.ensemble_num):
+            Qprin = DQN(10, env.action_space.n, self.hidden_dim, optimizer = keras.optimizers.Adam(learning_rate=self.lr))
+            Qtarg = DQN(10, env.action_space.n, self.hidden_dim, optimizer = keras.optimizers.Adam(learning_rate=self.lr))
+            self.Qs.append([Qprin, Qtarg])
+
+        # initializing weights with seed range 1~10 (int)
+        np.random.seed(self.initialize_mode)
+        weights = []
+        for n in range(self.ensemble_num):
+            Qprin_weights = self.Qs[n][0].qfunction.get_weights()
+            Qtarg_weights = self.Qs[n][1].qfunction.get_weights()
+            Qprin_weights = [np.random.permutation(w.flat).reshape(w.shape) for w in Qprin_weights]
+            Qtarg_weights = [np.random.permutation(w.flat).reshape(w.shape) for w in Qtarg_weights]
+            weights.append([Qprin_weights, Qtarg_weights])
+        for n in range(self.ensemble_num):
+            self.Qs[n][0].qfunction.set_weights(weights[n][0]); self.Qs[n][1].qfunction.set_weights(weights[n][1])
+        # ======================== #
+
 
         ### For Q value training ###
         totalstep = 0
@@ -188,7 +219,7 @@ class agent():
         r_record = []
 
         for iter in range(self.episode_length):
-            self.state = self.env.reset()
+            state = env.reset()
             done = False
             rsum = 0
 
@@ -209,15 +240,15 @@ class agent():
                 if np.random.rand() < eps or totalstep <= initialize:
                     action = np.random.choice([0, 1])
                 else:
-                    Q = self.Qs[head4action_train][0].compute_Qvalues(np.array(self.state)) # Qprin
+                    Q = self.Qs[head4action_train][0].compute_Qvalues(np.array(state)) # Qprin
                     action = np.argmax(Q)   # always max action choose
                 ##################
 
                 ##################
                 ###  ONE STEP  ###
                 ##################
-                curr_state = self.state
-                next_state, reward, done, _ = self.env.step(action)
+                curr_state = state
+                next_state, reward, done, _ = env.step(action)
                 rsum += reward
                 ##################
                 
@@ -280,6 +311,8 @@ class agent():
                     for n in range(self.ensemble_num):
                         self.Qs[n][1].update_weights(self.Qs[n][0])
                 #############################
+                
+                if done : print(next_state)
 
                 pass
             
@@ -288,4 +321,7 @@ class agent():
             if iter % 10 == 0:
                 print('iteration {} ave reward {}'.format(iter, np.mean(r_record[-10:])))
 
+        for i in range(len(self.Qs)):
+            self.Qs[i][0].qfunction.save(os.getcwd()+"/model/chainMDP"+'/Qprin_'+str(i))
+            self.Qs[i][1].qfunction.save(os.getcwd()+"/model/chainMDP"+'/Qtarg_'+str(i))
         return

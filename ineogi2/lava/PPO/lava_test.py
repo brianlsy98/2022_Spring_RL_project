@@ -8,7 +8,7 @@ import os
 
 # default setting
 max_steps = 100
-stochasticity = 0.3 # probability of the selected action failing and instead executing any of the remaining 3
+stochasticity = 0 # probability of the selected action failing and instead executing any of the remaining 3
 no_render = True
 
 env = ZigZag6x10(percentage_reward=True, max_steps=max_steps, act_fail_prob=stochasticity, goal=(5, 9), numpy_state=False)

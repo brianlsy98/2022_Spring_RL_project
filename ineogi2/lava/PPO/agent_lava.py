@@ -92,12 +92,12 @@ class agent():      # PPO agent
 
         # Hyperparameters of the PPO algorithm
         self.steps_per_epoch = 4000
-        self.epochs = 50
+        self.epochs = 100
         self.gamma = 0.99
         self.clip_ratio = 0.2
         self.policy_learning_rate = 3e-4
         self.value_function_learning_rate = 1e-3
-        self.hidden_sizes = (128, 128)
+        self.hidden_sizes = (128, 64)
 
         self.train_policy_iterations = 80
         self.train_value_iterations = 80

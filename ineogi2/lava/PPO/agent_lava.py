@@ -92,12 +92,12 @@ class agent():      # PPO agent
 
         # Hyperparameters of the PPO algorithm
         self.steps_per_epoch = 4000
-        self.epochs = 100
+        self.epochs = 200
         self.gamma = 0.99
         self.clip_ratio = 0.2
         self.policy_learning_rate = 3e-4
         self.value_function_learning_rate = 1e-3
-        self.hidden_sizes = (128, 64)
+        self.hidden_sizes = (128, 128)
 
         self.train_policy_iterations = 80
         self.train_value_iterations = 80
@@ -236,16 +236,16 @@ class agent():      # PPO agent
 
                 # ======= reward -100 if reached to same place 3 times after action ========= #
                 # ======= *********** key idea for training time decrease *********** ======= #
-                if goal_reached == 0:   # reward implementation until first goal reach
-                    for state in obs_only_state :
-                        if state > 2 : reward -= 1; done = True; reward_for_print -= 1
-                        elif state > 1 : reward -= state/len(obs_only_state)
-                        elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
+                # if goal_reached == 0:   # reward implementation until first goal reach
+                #     for state in obs_only_state :
+                #         if state > 2 : reward -= 1; done = True; reward_for_print -= 1
+                #         elif state > 1 : reward -= state/len(obs_only_state)
+                #         elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
                 
-                    if np.where(observation_new == 1)[0] == self.env.goal[0]*self.env._shape[1]+self.env.goal[1]:
-                        # 2*(self.env._shape[0]+self.env._shape[1]) : longest dist to goal
-                        reward += np.exp(3*(2*(self.env._shape[0]+self.env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
-                        goal_reached = 1
+                #     if np.where(observation_new == 1)[0] == self.env.goal[0]*self.env._shape[1]+self.env.goal[1]:
+                #         # 2*(self.env._shape[0]+self.env._shape[1]) : longest dist to goal
+                #         reward += np.exp(3*(2*(self.env._shape[0]+self.env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
+                #         goal_reached = 1
                 # =========================================================================== #
                 # if goal reached, reward is only given by env.step function
 

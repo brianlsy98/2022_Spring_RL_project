@@ -5,7 +5,7 @@
 # Code by Sungyoung Lee
 
 # Referred to the example code from keras.io (cartpole ppo example)
-
+from pprint import pprint
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -15,6 +15,7 @@ import gym
 import scipy.signal
 import time
 import os
+
 
 def discounted_cumulative_sums(x, discount):
     # Discounted cumulative sums of vectors for computing rewards-to-go and advantage .
@@ -193,7 +194,8 @@ class agent():      # PPO agent
 
         observation, episode_return, episode_length = self.env.reset(), 0, 0
         reward_for_print = 0
-
+        __pit = 4.4
+        __goal = 3.3
 
         for epoch in range(self.epochs):
             
@@ -208,8 +210,8 @@ class agent():      # PPO agent
             obs_with_pit_goal = np.zeros((self.env._shape[0]*self.env._shape[1],))
             obs_only_state = np.zeros((self.env._shape[0]*self.env._shape[1],))
             for pit in self.env._pits:
-                obs_with_pit_goal[pit] -= 100                                   # visualize pit as -100
-            obs_with_pit_goal[self.env.goal[0]*self.env._shape[1]+self.env.goal[1]] = 1000     # visuailze goal as 1000
+                obs_with_pit_goal[pit] += __pit                                   # visualize pit as -100
+            obs_with_pit_goal[self.env.goal[0]*self.env._shape[1]+self.env.goal[1]] = __goal     # visuailze goal as 1000
             # ========================= #
 
             for t in range(self.steps_per_epoch):
@@ -236,16 +238,16 @@ class agent():      # PPO agent
 
                 # ======= reward -100 if reached to same place 3 times after action ========= #
                 # ======= *********** key idea for training time decrease *********** ======= #
-                # if goal_reached == 0:   # reward implementation until first goal reach
-                #     for state in obs_only_state :
-                #         if state > 2 : reward -= 1; done = True; reward_for_print -= 1
-                #         elif state > 1 : reward -= state/len(obs_only_state)
-                #         elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
+                if goal_reached == 0:   # reward implementation until first goal reach
+                    for state in obs_only_state :
+                        if state > 2 : reward -= 1; done = True; reward_for_print -= 1
+                        elif state > 1 : reward -= state/len(obs_only_state)
+                        elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
                 
-                #     if np.where(observation_new == 1)[0] == self.env.goal[0]*self.env._shape[1]+self.env.goal[1]:
-                #         # 2*(self.env._shape[0]+self.env._shape[1]) : longest dist to goal
-                #         reward += np.exp(3*(2*(self.env._shape[0]+self.env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
-                #         goal_reached = 1
+                    if np.where(observation_new == 1)[0] == self.env.goal[0]*self.env._shape[1]+self.env.goal[1]:
+                        # 2*(self.env._shape[0]+self.env._shape[1]) : longest dist to goal
+                        reward += np.exp(3*(2*(self.env._shape[0]+self.env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
+                        goal_reached = 1
                 # =========================================================================== #
                 # if goal reached, reward is only given by env.step function
 
@@ -270,15 +272,19 @@ class agent():      # PPO agent
                         print_once = 1
                         print("")
                         print(f"trajectory : at epoch {epoch+1}")
-                        print(obs_with_pit_goal.reshape(self.env._shape))
+                        new = list(obs_with_pit_goal.reshape(self.env._shape))
+                        for e in new:
+                            print(list(e))
+                        
+                        # print(obs_with_pit_goal.reshape(self.env._shape))
+
                         if goal_reached == 1: print("goal_reached")
-                    # ========================== #
-                    # == only for visualizing = #
+
                     obs_with_pit_goal = np.zeros((self.env._shape[0]*self.env._shape[1],))
                     obs_only_state = np.zeros((self.env._shape[0]*self.env._shape[1],))
                     for pit in self.env._pits:
-                        obs_with_pit_goal[pit] -= 100                                   # visualize pit as -100
-                    obs_with_pit_goal[self.env.goal[0]*self.env._shape[1]+self.env.goal[1]] = 1000     # visuailze goal as 1000
+                        obs_with_pit_goal[pit] += __pit                                   # visualize pit as -100
+                    obs_with_pit_goal[self.env.goal[0]*self.env._shape[1]+self.env.goal[1]] = __goal     # visuailze goal as 1000
                     # ========================= #
 
                     last_value = 0 if done else self.critic(obs)

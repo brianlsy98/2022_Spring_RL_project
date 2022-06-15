@@ -35,27 +35,40 @@
 
 from chain_mdp import ChainMDP
 from agent_chainMDP import agent
+import numpy as np
+import time
 
+start = time.time()
+n = 10 # chain mdp state num
 
 # recieve 1 at rightmost stae and recieve small reward at leftmost state
-env = ChainMDP(10)
+env = ChainMDP(n)
 s = env.reset()
 
 """ Your agent"""
-agent = agent(env.observation_space.n, env.action_space.n)  # <-- what's added
+agent = agent(env)  # <-- what's added
 
 #######################################
 # === For training from beginning === #
-if agent.mode == 1 : agent.train(env) #     <-- what's added
+if agent.mode == 1 :
+    AUC = agent.train() #     <-- what's added
+    print(AUC)
+    print("AUC: ", np.sum(AUC))
 # =================================== #
 #######################################
+
+print("training time : ", time.time() - start)
 
 done = False
 cum_reward = 0.0
 # always move right left: 0, right: 1
-action = 1
+env = ChainMDP(n)
+s = env.reset()
+
 while not done:    
     action = agent.action(s)
+    print("state: ", s)
+    print("action: ", action)
     ns, reward, done, _ = env.step(action)
     cum_reward += reward
     s = ns

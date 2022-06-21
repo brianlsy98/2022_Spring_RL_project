@@ -1,2 +1,2 @@
-model_checkpoint_path: "lava_critic_w_2"
-all_model_checkpoint_paths: "lava_critic_w_2"
+model_checkpoint_path: "lava_critic_w_13"
+all_model_checkpoint_paths: "lava_critic_w_13"

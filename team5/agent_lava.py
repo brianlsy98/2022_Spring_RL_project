@@ -8,12 +8,11 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers, initializers
+from tensorflow.keras import layers
 
-import gym
 import scipy.signal
-import time
 import os
+from matplotlib import pyplot as plt
 
 def discounted_cumulative_sums(x, discount):
     # Discounted cumulative sums of vectors for computing rewards-to-go and advantage .
@@ -170,13 +169,8 @@ class agent():      # PPO agent
     def train(self, episodes, env, no_render):
         
         result = []
-
-        # ==== Training length ==== #
-        self.steps_per_epoch = 200
         self.epochs = episodes
-        # ========================= #
         self.buffer_size = 4000
-
 
         # === Hyperparameters of the PPO algorithm === #
         self.gamma = 0.99
@@ -210,37 +204,26 @@ class agent():      # PPO agent
         self.value_optimizer = keras.optimizers.Adam(learning_rate=self.value_function_learning_rate)
         # ============================================ #
 
-        observation, episode_return, episode_length = env.reset(), 0, 0
-        reward_for_print = 0
-
-        for epoch in range(self.epochs):
+        observation, epoch_return = env.reset(), 0
+        
+        epoch = 0
+        min_reward = 0
+        
+        while True:
             
-            sum_return = 0
-            sum_length = 0
             num_episodes = 0
 
-            print_once = 0
-            goal_reached = 0
-
-            # == only for visualizing = #
-            obs_with_pit_goal = np.zeros((env._shape[0]*env._shape[1],))
             obs_only_state = np.zeros((env._shape[0]*env._shape[1],))
-            for pit in env._pits:
-                obs_with_pit_goal[pit] -= 100                                   # visualize pit as -100
-            obs_with_pit_goal[env.goal[0]*env._shape[1]+env.goal[1]] = 1000     # visuailze goal as 1000
-            # ========================= #
 
-
-            for t in range(self.steps_per_epoch):
+            prev_t = 0
+            goal_reached = 0    # Coarse Control at least 1 time every buffer size(4000) steps
+            for t in range(self.buffer_size):
                 if not no_render:
                     env.render()
 
-                # == trajectory visualizing == #
-                obs_with_pit_goal[observation] += 1
-                # ============================ #
-                # ====== observation cum ===== #
+                # ====== observation accumulation ===== #
                 obs_only_state[observation] += 1
-                # ============================ #  
+                # ===================================== #  
 
                 # obs : one-hot array
                 # observation : integer
@@ -250,26 +233,25 @@ class agent():      # PPO agent
                 logits, action = self.sample_action(obs)
                 observation_new, reward, done, _ = env.step(action[0].numpy())
 
-                reward_for_print += reward
+                epoch_return += reward
 
                 # ======= reward -100 if reached to same place 3 times after action ========= #
                 # ======= *********** key idea for training time decrease *********** ======= #
+                ########### COARSE CONTROL ###########
+                if reward < min_reward : min_reward = reward
+                if done != True and goal_reached == 0: reward = 0
                 if goal_reached == 0:   # reward implementation until first goal reach
                     for state in obs_only_state :
-                        if state > 2 : reward -= 1; done = True; reward_for_print -= 1
-                        elif state > 1 : reward -= state/len(obs_only_state)
-                        elif state == 1 : reward += max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
+                        if state > 2 : reward -= 1*abs(min_reward); done = True
+                        elif state > 1 : reward -= state*abs(min_reward)/len(obs_only_state)
+                        elif state == 1 : reward += abs(min_reward)*max(1/len(obs_only_state), 0.01)   # 1/60 : this should be higher than 0.01
                 
                     if np.where(observation_new == 1)[0] == env.goal[0]*env._shape[1]+env.goal[1]:
                         # 2*(env._shape[0]+env._shape[1]) : longest dist to goal
-                        reward += np.exp(3*(2*(env._shape[0]+env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
+                        reward += abs(min_reward)*np.exp(3*(2*(env._shape[0]+env._shape[1]) - np.count_nonzero(obs_only_state))/len(obs_only_state))
                         goal_reached = 1
                 # =========================================================================== #
                 # if goal reached, reward is only given by env.step function
-
-
-                episode_return += reward
-                episode_length += 1
 
                 value_t = self.critic(obs)
                 logprobability_t = self.logprobabilities(logits, action)
@@ -280,60 +262,81 @@ class agent():      # PPO agent
 
                 self.buffer.store(obs, action, reward, value_t, logprobability_t)
 
-
                 terminal = done
-                if terminal or (t == self.steps_per_epoch - 1):
-                    # == only for visualizing == #
-                    # if print_once == 0 and t > self.steps_per_epoch - 0.5*env.max_steps:
-                    #     print_once = 1
-                        # print("")
-                        # print(f"trajectory : at epoch {epoch+1}")
-                        # print(obs_with_pit_goal.reshape(env._shape))
-                        # if goal_reached == 1: print("goal_reached"); print("")
-                    # ========================== #
-                    # == only for visualizing = #
-                    obs_with_pit_goal = np.zeros((env._shape[0]*env._shape[1],))
+                if terminal or (t == self.buffer_size - 1):
+
                     obs_only_state = np.zeros((env._shape[0]*env._shape[1],))
-                    for pit in env._pits:
-                        obs_with_pit_goal[pit] -= 100                                   # visualize pit as -100
-                    obs_with_pit_goal[env.goal[0]*env._shape[1]+env.goal[1]] = 1000     # visuailze goal as 1000
-                    # ========================= #
 
                     last_value = 0 if done else self.critic(obs)
                     self.buffer.finish_trajectory(last_value)
-                    sum_return += reward_for_print
-                    sum_length += episode_length
                     num_episodes += 1
-                    observation, episode_return, episode_length = env.reset(), 0, 0
-                    reward_for_print = 0
 
-
-            if epoch % (self.buffer_size/self.steps_per_epoch) == self.buffer_size/self.steps_per_epoch-1 and epoch > 0:
-                (
-                    observation_buffer,
-                    action_buffer,
-                    advantage_buffer,
-                    return_buffer,
-                    logprobability_buffer,
-                ) = self.buffer.get()
-
-                for _ in range(self.train_policy_iterations):
-                    kl = self.train_policy(
-                        observation_buffer, action_buffer, logprobability_buffer, advantage_buffer
+                    # goal reached at past
+                    # and goal reached at current
+                    if goal_reached == 1 and epoch_return > 0:
+                        epoch += 1
+                        _return = round(epoch_return / num_episodes, 2)
+                        result.append(_return)
+                        print(
+                            "- Epoch "+str(epoch)+". Avg Return: "+str(_return)
+                        )
+                        epoch_return = 0
+                        num_episodes = 0
+                        prev_t = t
+                    
+                    if epoch >= self.epochs : break
+                    observation = env.reset()
+                
+                # goal reached at past
+                # but goal not reached at current
+                if goal_reached == 1 and epoch_return < 0 and (t-prev_t) % env.max_steps == env.max_steps - 1:
+                    num_episodes += 1
+                    epoch += 1
+                    _return = round(epoch_return / num_episodes, 2)
+                    result.append(_return)
+                    print(
+                        "- Epoch "+str(epoch)+". Avg Return: "+str(_return)
                     )
-                    if kl > 1.5 * self.target_kl:
-                        break
-                for _ in range(self.train_value_iterations):
-                    self.train_value_function(observation_buffer, return_buffer)
+                    epoch_return = 0
+                    num_episodes = 0
+                    if epoch >= self.epochs : break
+                    observation = env.reset()
+
+                if goal_reached == 0 and t % env.max_steps == env.max_steps - 1:
+                    num_episodes += 1
+                    epoch += 1
+                    _return = round(epoch_return / num_episodes, 2)
+                    result.append(_return)
+                    print(
+                        "- Epoch "+str(epoch)+". Avg Return: "+str(_return)
+                    )
+                    epoch_return = 0
+                    num_episodes = 0
+                    if epoch >= self.epochs : break
+                    observation = env.reset()
+
+            # information about epoch : (one epoch can have several episodes)
+            # - if goal not reached at current episode : epoch += 1 when agent steps 100 steps
+            # - if goal reached at current episode : epoch += 1 when episode ends
+            if epoch >= self.epochs : break
+
+            (
+                observation_buffer,
+                action_buffer,
+                advantage_buffer,
+                return_buffer,
+                logprobability_buffer,
+            ) = self.buffer.get()
 
 
-            _return = round(sum_return / num_episodes, 2)
-            result.append(_return)
-            print(
-                "- Epoch "+str(epoch + 1)+". Return: "+str(_return)+". Length: "+str(int(sum_length / num_episodes))
-            )
+            for _ in range(self.train_policy_iterations):
+                kl = self.train_policy(
+                    observation_buffer, action_buffer, logprobability_buffer, advantage_buffer
+                )
+                if kl > 1.5 * self.target_kl:
+                    break
 
-        self.actor.save(os.getcwd()+"/model/lava"+'/lava_actor')
-        self.critic.save(os.getcwd()+"/model/lava"+'/lava_critic')
+            for _ in range(self.train_value_iterations):
+                self.train_value_function(observation_buffer, return_buffer)
 
         return result

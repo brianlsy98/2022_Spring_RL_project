@@ -25,7 +25,6 @@ class Qfunction(keras.Model):
 
         self.hidden_layers = []
         for hidden_dim in hidden_dims:
-            # TODO: define each hidden layers
             layer = keras.layers.Dense(hidden_dim, activation='relu',
                                        kernel_initializer=initializer)
             self.hidden_layers.append(layer)
@@ -40,7 +39,6 @@ class Qfunction(keras.Model):
 
 
 # Wrapper class for training Qfunction and updating weights (target network)
-
 class DQN(object):
 
     def __init__(self, obssize, actsize, hidden_dims, optimizer):
@@ -107,7 +105,6 @@ class ReplayBuffer(object):
 
 
 ### DQN implementation ###
-
 class agent():
 
     def __init__(self):
@@ -134,8 +131,6 @@ class agent():
 
     def load_weights(self):
         print("loading existing model..")
-        self.actor = keras.models.load_model(os.getcwd()+"/model/lava"+'/lava_actor')    # load policy
-        self.critic = keras.models.load_model(os.getcwd()+"/model/lava"+'/lava_critic')  # load value-func
         self.Qs = []
         for i in range(self.ensemble_num):
             Qprin = DQN(10, 2, self.hidden_dim, optimizer = keras.optimizers.Adam(learning_rate=self.lr))
@@ -179,28 +174,25 @@ class agent():
         ############################
 
         self.r_record = []
-
-        for ite in tqdm(range(self.episode_length)):
+        # === For additional rewards for less visited states === #
+        state_visit_history = np.zeros(self.env.observation_space.n)
+        # ====================================================== #
+        for iter in tqdm(range(self.episode_length)):
             self.state = self.env.reset()
             done = False
             rsum = 0
-
-            # Action :
-            # - train : head fixed for each epoch
-            # - eval : vote
-            # head4action_train = np.random.randint(0, self.ensemble_num)
 
             while not done:
                 totalstep += 1
 
                 #####################
                 ### Epsilon Decay ###
-                #####################
-                if np.sum(np.array(self.r_record) >= 1) >= 1:
-                    if eps > 0.05 and totalstep > initialize:
-                        eps -= eps_minus
-                    elif eps < 0.05 and totalstep > initialize:
-                        eps = 0
+                # #####################
+                # if np.sum(np.array(self.r_record) >= 1) >= 1:
+                if eps > 0.05 and totalstep > initialize:
+                    eps -= eps_minus
+                elif eps < 0.05 and totalstep > initialize:
+                    eps = 0
 
                 ##################
                 ### Get Action ###
@@ -208,8 +200,6 @@ class agent():
                 if np.random.rand() < eps or totalstep <= initialize:
                     action = np.random.choice([0, 1])
                 else:
-                    #                     Q = self.Qs[head4action_train][0].compute_Qvalues(np.array(self.state)) # Qprin
-                    #                     action = np.argmax(Q)   # always max action choose
                     voting_paper = np.zeros(self.env.action_space.n)
 
                     for n in range(self.ensemble_num):
@@ -228,6 +218,12 @@ class agent():
                 next_state, reward, done, _ = self.env.step(action)
                 rsum += reward
                 ##################
+                # ===== additional reward for less visited states ===== #
+                pos = np.count_nonzero(next_state)
+                reward += np.exp(-(state_visit_history[pos-1]//self.env.n))
+                state_visit_history[pos-1] += 1
+                #print(state_visit_history, eps, iter)
+                # ===================================================== #
 
                 # === ensemble DQN === #
                 heads = np.random.binomial(1, self.bernoulli_prob, self.ensemble_num)
@@ -291,12 +287,8 @@ class agent():
                 ### Update theta of Qtarg ###
                 #############################
                 if totalstep % tau == 0:
-                    # print("")
-                    # print("epsilon : ", eps)
-                    # print("target updated, totalstep : ", totalstep)
                     for n in range(self.ensemble_num):
                         self.Qs[n][1].update_weights(self.Qs[n][0])
-
                 #############################
 
                 pass
@@ -308,8 +300,8 @@ class agent():
 
         self.eps = eps
 
-        for i in range(len(self.Qs)):
-            self.Qs[i][0].qfunction.save(os.getcwd()+"/model/chainMDP"+'/Qprin_'+str(i))
-            self.Qs[i][1].qfunction.save(os.getcwd()+"/model/chainMDP"+'/Qtarg_'+str(i))
+        # for i in range(len(self.Qs)):
+        #     self.Qs[i][0].qfunction.save(os.getcwd()+"/model/chainMDP"+'/Qprin_'+str(i))
+        #     self.Qs[i][1].qfunction.save(os.getcwd()+"/model/chainMDP"+'/Qtarg_'+str(i))
 
         return self.r_record
